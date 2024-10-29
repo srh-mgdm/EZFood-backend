@@ -6,7 +6,7 @@ const User = require("../models/users");
 
 const { checkBody } = require("../modules/checkBody");
 
-/* GET meals */
+/* GET meals - technical route for test purpose only */
 router.get("/", function (req, res) {
   Meals.find()
     .then((data) => {
@@ -60,7 +60,10 @@ router.post("/", function (req, res) {
             res.json({ result: true, meal: data });
           })
           .catch((error) => {
-            res.json({ result: false, error: "Cannot create meal" });
+            res.json({
+              result: false,
+              error: error.message || "Cannot create new meal",
+            });
           });
       } else {
         res.json({ result: false, error: "User not found" });

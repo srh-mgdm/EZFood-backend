@@ -45,7 +45,11 @@ router.post("/signup", (req, res) => {
         newUser
           .save()
           .then((newDoc) => {
-            res.json({ result: true, token: newDoc.token });
+            res.json({
+              result: true,
+              token: newDoc.token,
+              username: newDoc.username,
+            });
           })
           .catch((error) => {
             res.json({ result: false, error: "Error saving user" });

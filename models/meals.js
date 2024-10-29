@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
 
 const ingredientSchema = mongoose.Schema({
-  name: String,
+  ingredientId: { type: mongoose.Schema.Types.ObjectId, ref: "ingredients" },
   quantity: Number,
   unit: String,
 });
+
 const prepStepSchema = mongoose.Schema({
   stepNumber: Number,
   stepDescription: String,
