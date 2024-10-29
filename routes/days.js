@@ -3,6 +3,7 @@ var router = express.Router();
 
 const Days = require("../models/days");
 const User = require("../models/users");
+const Meals = require("../models/meals");
 
 const { checkBody } = require("../modules/checkBody");
 
@@ -120,7 +121,7 @@ router.put("/", function (req, res) {
   }
 
   // Find the user
-  User.findOne({ token: req.body.token })
+  User.findOne({ token: token })
     .then((data) => {
       if (data == null) {
         return res.json({ result: false, error: "User not found" });
@@ -153,6 +154,127 @@ router.put("/", function (req, res) {
     })
     .catch((error) => {
       return res.json({ result: false, error: "Database error" });
+    });
+});
+
+/* DELETE an existing meal in a given day at a given position */
+router.delete("/", function (req, res) {
+  // Parse header for token
+  if (!req.headers.authorization) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+  const token = req.headers.authorization.split(" ")[1];
+
+  if (!checkBody(req.body, ["dayId", "mealPosition"])) {
+    res.json({ result: false, error: "Missing or empty fields" });
+    return;
+  }
+
+  // Find the user
+  User.findOne({ token: token })
+    .then((user) => {
+      if (user == null) {
+        return res.json({ result: false, error: "User not found" });
+      }
+      // User found => find the corresponding day
+      Days.findById(req.body.dayId)
+        .then((day) => {
+          if (!day) {
+            return res.json({ result: false, error: "Day not found" });
+          }
+          // Day found => delete the corresponding meal
+          day.mealsId.splice(req.body.mealPosition, 1);
+          day
+            .save()
+            .then((data) => {
+              res.json({ result: true, day: data });
+            })
+            .catch((error) => {
+              res.json({
+                result: false,
+                error: "Cannot remove meal from day",
+              });
+            });
+        })
+        .catch((error) => {
+          return res.json({ result: false, error: "Database error" });
+        });
+    })
+    .catch((error) => {
+      return res.json({ result: false, error: "Database error" });
+    });
+});
+
+/* POST any number of days filling (randomly) with possible meals, for a user by token */
+router.post("/generate", function (req, res) {
+  // Parse header for token
+  if (!req.headers.authorization) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+  const token = req.headers.authorization.split(" ")[1];
+
+  if (!checkBody(req.body, ["dayNumber"])) {
+    res.json({ result: false, error: "Missing or empty fields" });
+    return;
+  }
+
+  // Find the user
+  User.findOne({ token: token })
+    .then((user) => {
+      if (user == null) {
+        return res.json({ result: false, error: "User not found" });
+      }
+
+      // User is found => get meals from database
+      Meals.find()
+        .then((meals) => {
+          if (meals == null) {
+            return res.json({ result: false, error: "Meals not found" });
+          }
+
+          // We have meals so we can create new days
+          const newDays = [];
+          for (let i = 0; i < req.body.dayNumber; i++) {
+            // Randomize meals from database
+            const randomMeals = [];
+            for (let j = 0; j < 2; j++) {
+              //   console.log(Math.floor(Math.random() * meals.length));
+              randomMeals.push(meals[Math.floor(Math.random() * meals.length)]);
+            }
+            newDays.push(
+              new Days({
+                userId: user._id,
+                dayName: "Jour " + (i + 1),
+                dayNumber: i + 1,
+                mealsId: randomMeals,
+              })
+            );
+          }
+
+          // Insert newDays
+          Days.insertMany(newDays)
+            .then((data) => {
+              res.json({ result: true, days: data });
+            })
+            .catch((error) => {
+              return res.json({
+                result: false,
+                error: "Database error when inserting days",
+              });
+            });
+        })
+        .catch((error) => {
+          return res.json({
+            result: false,
+            error: "Database error when looking for meals",
+          });
+        });
+    })
+    .catch((error) => {
+      return res.json({
+        result: false,
+        error: "Database error when looking for user",
+      });
     });
 });
 
