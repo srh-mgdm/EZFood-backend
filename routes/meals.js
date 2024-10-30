@@ -20,14 +20,39 @@ router.get("/all", function (req, res) {
 
 /* GET meal by meal name - token NOT required */
 router.get("/name/:mealName", function (req, res) {
-  // Let's use ranked search patterns
-  Meals.find(
-    // Uses MongoDB's text search to find documents where 'mealName' matches the search keyword.
-    { $text: { $search: req.params.mealName } },
-    // Adds a 'textScore' field to each document to measure relevance to the search term.
-    { score: { $meta: "textScore" } }
-  )
-    .sort({ score: { $meta: "textScore" } }) // Sorts the results by 'textScore' so that documents with higher relevance appear first.
+  // Let's use aggregation framework
+  Meals.aggregate([
+    {
+      $search: {
+        index: "default", // search index created in the db
+        compound: {
+          should: [
+            {
+              autocomplete: {
+                query: req.params.mealName, // text to search
+                path: "mealName", // field to search in the db
+                fuzzy: {
+                  maxEdits: 2, // tolerance for typing errors
+                },
+                score: { boost: { value: 20 } }, // boost results matching the text
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      $project: {
+        mealName: 1,
+        score: { $meta: "searchScore" },
+      },
+    },
+    {
+      $sort: {
+        score: -1, // sort by score in descending order
+      },
+    },
+  ])
     .then((results) => {
       res.json({ result: true, meals: results });
     })
