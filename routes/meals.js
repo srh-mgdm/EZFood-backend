@@ -22,10 +22,12 @@ router.get("/all", function (req, res) {
 router.get("/name/:mealName", function (req, res) {
   // Let's use ranked search patterns
   Meals.find(
+    // Uses MongoDB's text search to find documents where 'mealName' matches the search keyword.
     { $text: { $search: req.params.mealName } },
+    // Adds a 'textScore' field to each document to measure relevance to the search term.
     { score: { $meta: "textScore" } }
   )
-    .sort({ score: { $meta: "textScore" } })
+    .sort({ score: { $meta: "textScore" } }) // Sorts the results by 'textScore' so that documents with higher relevance appear first.
     .then((results) => {
       res.json({ result: true, meals: results });
     })
