@@ -19,6 +19,8 @@ const mealSchema = mongoose.Schema({
   mealServings: Number,
 });
 
+mealSchema.index({ mealName: "text" });
+
 const Meal = mongoose.model("meals", mealSchema);
 
 module.exports = Meal;

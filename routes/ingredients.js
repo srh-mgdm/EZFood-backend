@@ -17,6 +17,23 @@ router.get("/", function (req, res) {
     });
 });
 
+/* GET ingredients by name - token NOT required */
+router.get("/name/:ingName", function (req, res) {
+  // Let's use ranked search patterns
+  Ingredients.find(
+    { $text: { $search: req.params.ingName } },
+    { score: { $meta: "textScore" } }
+  )
+    .sort({ score: { $meta: "textScore" } })
+    .then((results) => {
+      res.json({ result: true, ingredients: results });
+    })
+    .catch((error) => {
+      console.error("Error fetching ingredients:", error);
+      res.json({ result: false, error: "Cannot fetch ingredients" });
+    });
+});
+
 /* POST a new ingredient, only possible for a user with a token */
 router.post("/", function (req, res) {
   if (!checkBody(req.body, ["name"])) {
