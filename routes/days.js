@@ -7,17 +7,6 @@ const Meals = require("../models/meals");
 
 const { checkBody } = require("../modules/checkBody");
 
-/* GET days */
-// router.get("/", function (req, res) {
-//   Days.find()
-//     .then((data) => {
-//       res.json({ result: true, days: data });
-//     })
-//     .catch((error) => {
-//       res.json({ result: false, error: "Cannot fetch days" });
-//     });
-// });
-
 /* GET days for user by token */
 router.get("/", function (req, res) {
   // Parse header for token
@@ -32,37 +21,25 @@ router.get("/", function (req, res) {
       if (user == null) {
         return res.json({ result: false, error: "User not found" });
       }
-      console.log("user found", user);
       // User found
       // Check for days with user id, populate meals
-      Days.find({ userId: user._id })
-        .populate("mealsId")
+      Days.findDaysWithMeals(user._id)
         .then((data) => {
-          if (!data) {
+          if (data.length === 0) {
             return res.json({ result: false, error: "No days found for user" });
           }
-          console.log("data", data);
-          // Days found, we need to send only necessary fields
-          const resultDays = [];
-          const days = data.map((day) => {
-            resultDays.push({
-              dayId: day._id,
-              dayName: day.dayName,
-              dayNumber: day.dayNumber,
-              meals: day.mealsId.map((meal) => {
-                return { mealName: meal.mealName, mealId: meal._id };
-              }),
-            });
+
+          res.json({
+            result: true,
+            days: data,
           });
-          console.log("resultDays", resultDays);
-          res.json({ result: true, days: resultDays });
         })
         .catch((error) => {
-          res.json({ result: false, error: "Cannot find days" });
+          res.json({ result: false, error: "Cannot find days: " + error });
         });
     })
     .catch((error) => {
-      return res.json({ result: false, error: "Database error" });
+      return res.json({ result: false, error: "Database error: " + error });
     });
 });
 
@@ -108,14 +85,17 @@ router.post("/", function (req, res) {
 });
 
 /* PUT an existing meal in a given day at a given position */
-router.put("/", function (req, res) {
+/* if mealId is not set, corresponding position will be set to an empty meal object */
+router.put("/meal/", function (req, res) {
   // Parse header for token
   if (!req.headers.authorization) {
     return res.status(400).json({ error: "Token is required" });
   }
   const token = req.headers.authorization.split(" ")[1];
+  console.log("req.body : ", req.body);
 
-  if (!checkBody(req.body, ["dayId", "mealId", "mealPosition"])) {
+  // TODO - check for mealPosition, but it is the number
+  if (!checkBody(req.body, ["dayId"])) {
     res.json({ result: false, error: "Missing or empty fields" });
     return;
   }
@@ -135,7 +115,12 @@ router.put("/", function (req, res) {
           // Day found => update the corresponding meal
 
           // TODO : if meal is already set ... it will be overwritten
-          day.mealsId[req.body.mealPosition] = req.body.mealId;
+          // if mealId is not set, corresponding position will be set to empty
+          console.log("req.body.mealId : ", req.body.mealId);
+          day.mealsId[req.body.mealPosition] = req.body.mealId
+            ? req.body.mealId
+            : null;
+
           day
             .save()
             .then((data) => {
