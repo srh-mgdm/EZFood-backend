@@ -93,6 +93,21 @@ router.get("/", function (req, res) {
     });
 });
 
+/* GET meal by id - token NOT required */
+router.get("/:mealId", function (req, res) {
+  Meals.findById(req.params.mealId)
+    .populate("mealIngredients.ingredientId")
+    .then((data) => {
+      res.json({ result: true, meal: data });
+    })
+    .catch((error) => {
+      res.json({
+        result: false,
+        error: "Cannot fetch meal with id " + req.params.mealId,
+      });
+    });
+});
+
 /* POST a full new meal for a user by token */
 router.post("/", function (req, res) {
   // Parse header for token
