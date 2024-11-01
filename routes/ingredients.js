@@ -16,6 +16,23 @@ router.get("/", function (req, res) {
       res.json({ result: false, error: "Cannot fetch ingredients" });
     });
 });
+/* GET ingredients list by id */
+router.get("/list", function (req, res) {
+  const ingredientIds = req.query.ids ? req.query.ids.split(",") : []; // Récupère les IDs sous forme de tableau
+
+  if (ingredientIds.length === 0) {
+    return res.json({ result: false, error: "No ingredient IDs provided" });
+  }
+
+  Ingredients.find({ _id: { $in: ingredientIds } })
+    .then((data) => {
+      res.json({ result: 'WTH', ingredients: data });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: "Cannot fetch ingredients" });
+    });
+});
+
 
 /* GET ingredients by name - token NOT required */
 router.get("/name/:ingName", function (req, res) {
