@@ -44,6 +44,7 @@ router.get("/name/:mealName", function (req, res) {
     {
       $project: {
         mealName: 1,
+        mealImage: 1,
         score: { $meta: "searchScore" },
       },
     },

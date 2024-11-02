@@ -17,6 +17,7 @@ const mealSchema = mongoose.Schema({
   mealIngredients: [ingredientSchema],
   mealPrepSteps: [prepStepSchema],
   mealServings: Number,
+  mealImage: String,
 });
 
 // Creates a text index on the 'mealName' field to enable efficient text searches.
