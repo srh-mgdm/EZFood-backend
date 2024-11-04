@@ -110,6 +110,20 @@ router.get("/:mealId", function (req, res) {
 
 /* GET meal by id => ingredients list */
 
+router.post("/ingredients", async function (req, res) {
+
+  try {
+    // Conversion des mealIds en ObjectId
+    const mealIds = req.body.meal.map(id => mongoose.Types.ObjectId(id));
+
+    const meals = await Meal.find({ _id: { $in: mealIds } });
+    res.json({ result: true, meals });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des repas:", error);
+    res.status(500).json({ result: false, error: "Erreur lors de la récupération des repas." });
+  }
+});
+
 
 
 /* POST a full new meal for a user by token */
