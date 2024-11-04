@@ -173,6 +173,7 @@ router.post("/ingredientslist", async function (req, res) {
         });
       }
     });
+    console.log("Réponse envoyée :", JSON.stringify(resultIngredients, null, 2));
 
     res.json({ result: true, shoppingList: resultIngredients });
   } catch (error) {
