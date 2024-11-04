@@ -110,19 +110,22 @@ router.get("/:mealId", function (req, res) {
 });
 
 /* GET meal by id => ingredients list */
-router.get("/ingredients/:mealId", function (req, res) {
-  Meals.findById(req.params.mealId)
-    .populate("mealIngredients.ingredientId")
-    .then((data) => {
-      res.json({ result: true, meal: data.mealIngredients });
-    })
-    .catch((error) => {
-      res.json({
-        result: false,
-        error: "Cannot fetch meal with id " + req.params.mealId,
-      });
-    });
+
+router.post("/ingredients", async function (req, res) {
+
+  try {
+    // Conversion des mealIds en ObjectId
+    const mealIds = req.body.meal.map(id => mongoose.Types.ObjectId(id));
+
+    const meals = await Meal.find({ _id: { $in: mealIds } });
+    res.json({ result: true, meals });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des repas:", error);
+    res.status(500).json({ result: false, error: "Erreur lors de la récupération des repas." });
+  }
 });
+
+
 
 /* POST a full new meal for a user by token */
 router.post("/", function (req, res) {
