@@ -114,7 +114,7 @@ router.put("/meal/", function (req, res) {
           }
           // Day found => update the corresponding meal
 
-          // TODO : if meal is already set ... it will be overwritten
+          // if meal is already set ... it will be overwritten
           // if mealId is not set, corresponding position will be set to empty
           console.log("req.body.mealId : ", req.body.mealId);
           day.mealsId[req.body.mealPosition] = req.body.mealId
@@ -134,11 +134,14 @@ router.put("/meal/", function (req, res) {
             });
         })
         .catch((error) => {
-          return res.json({ result: false, error: "Database error" });
+          return res.json({
+            result: false,
+            error: "Database error : " + error,
+          });
         });
     })
     .catch((error) => {
-      return res.json({ result: false, error: "Database error" });
+      return res.json({ result: false, error: "Database error : " + error });
     });
 });
 
