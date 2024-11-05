@@ -18,7 +18,7 @@ const mealSchema = mongoose.Schema({
   mealPrepSteps: [prepStepSchema],
   mealServings: Number,
   mealImage: String,
-  isPublic: {Boolean: true},
+  isPublic: {type: Boolean, default: true},
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
 });
 
