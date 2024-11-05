@@ -1,6 +1,6 @@
 var express = require("express");
 var router = express.Router();
-const {ObjectId} = require("mongoose").Types
+const { ObjectId } = require("mongoose").Types;
 
 const Meals = require("../models/meals");
 const User = require("../models/users");
@@ -21,6 +21,82 @@ router.get("/all", function (req, res) {
 
 /* GET meal by meal name - token NOT required */
 router.get("/name/:mealName", function (req, res) {
+  // Check if the input length is less than 5 characters
+  if (req.params.mealName.length < 5) {
+    // Short pattern
+    Meals.find(
+      {
+        // mealName: { $regex: `^${req.params.mealName}`, $options: "i" },
+        mealName: {
+          $regex:
+            req.params.mealName.length <= 2
+              ? new RegExp(`^${req.params.mealName}`, "i")
+              : new RegExp(req.params.mealName, "i"),
+        },
+      },
+      {
+        _id: 1,
+        mealName: 1,
+        mealImage: 1,
+      }
+    )
+      .limit(10)
+      .then((results) => {
+        res.json({ result: true, meals: results });
+      })
+      .catch((error) => {
+        console.error("Error fetching meals:", error);
+        res.json({ result: false, error: "Cannot fetch meals" });
+      });
+  } else {
+    // Let's use aggregation framework for longer patterns
+    Meals.aggregate([
+      {
+        $search: {
+          index: "default", // search index created in the db
+          compound: {
+            should: [
+              {
+                autocomplete: {
+                  query: req.params.mealName, // text to search
+                  path: "mealName", // field to search in the db
+                  fuzzy: {
+                    maxEdits: 2, // tolerance for typing errors
+                  },
+                  score: { boost: { value: 20 } }, // boost results matching the text
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          mealName: 1,
+          mealImage: 1,
+          score: { $meta: "searchScore" },
+        },
+      },
+      {
+        $sort: {
+          score: -1, // sort by score in descending order
+        },
+      },
+    ])
+      .then((results) => {
+        res.json({ result: true, meals: results });
+      })
+      .catch((error) => {
+        console.error("Error fetching meal:", error);
+        res.json({ result: false, error: "Cannot fetch meal" });
+      });
+  }
+});
+
+/* GET meals by suggestion - token NOT required */
+// for now : the suggestion is only the first results without fuzzy matching
+// it is used when the matching pattern is under 5 characters
+router.get("/suggestions/:mealName", function (req, res) {
   // Let's use aggregation framework
   Meals.aggregate([
     {
@@ -32,10 +108,6 @@ router.get("/name/:mealName", function (req, res) {
               autocomplete: {
                 query: req.params.mealName, // text to search
                 path: "mealName", // field to search in the db
-                fuzzy: {
-                  maxEdits: 2, // tolerance for typing errors
-                },
-                score: { boost: { value: 20 } }, // boost results matching the text
               },
             },
           ],
@@ -145,6 +217,7 @@ router.post("/", function (req, res) {
           mealPrepSteps: req.body.mealPrepSteps,
           mealServings: req.body.mealServings,
           userId: data._id, // user id for foreign key
+
         });
 
         console.log("user found, creating new meal :", newMeal);
@@ -233,6 +306,7 @@ router.post("/ingredients", async function (req, res) {
       mealPrepSteps: req.body.mealPrepSteps,
       mealServings: req.body.mealServings,
       userId: user._id, // user id for foreign key
+      mealImage: req.body.mealImage,
     });
 
     const meal = await newMeal.save();

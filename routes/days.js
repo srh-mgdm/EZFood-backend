@@ -114,7 +114,7 @@ router.put("/meal/", function (req, res) {
           }
           // Day found => update the corresponding meal
 
-          // TODO : if meal is already set ... it will be overwritten
+          // if meal is already set ... it will be overwritten
           // if mealId is not set, corresponding position will be set to empty
           console.log("req.body.mealId : ", req.body.mealId);
           day.mealsId[req.body.mealPosition] = req.body.mealId
@@ -134,11 +134,14 @@ router.put("/meal/", function (req, res) {
             });
         })
         .catch((error) => {
-          return res.json({ result: false, error: "Database error" });
+          return res.json({
+            result: false,
+            error: "Database error : " + error,
+          });
         });
     })
     .catch((error) => {
-      return res.json({ result: false, error: "Database error" });
+      return res.json({ result: false, error: "Database error : " + error });
     });
 });
 
@@ -259,6 +262,99 @@ router.post("/generate", function (req, res) {
       return res.json({
         result: false,
         error: "Database error when looking for user",
+      });
+    });
+});
+
+// PUT route to fill existing days with unique meals in empty slots for a user by token
+router.put("/fillExistingDays", function (req, res) {
+  // Parse header for token
+  if (!req.headers.authorization) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+  const token = req.headers.authorization.split(" ")[1];
+
+  // Find the user
+  User.findOne({ token: token })
+    .then((user) => {
+      if (user == null) {
+        return res.json({ result: false, error: "User not found" });
+      }
+
+      // User is found => retrieve user's existing days
+      Days.find({ userId: user._id })
+        .then((days) => {
+          if (!days || days.length === 0) {
+            return res.json({ result: false, error: "No existing days found" });
+          }
+
+          // Retrieve all meals from the database
+          Meals.find()
+            .then((meals) => {
+              if (!meals || meals.length === 0) {
+                return res.json({ result: false, error: "No meals found" });
+              }
+
+              // Array of meal IDs for easy reference
+              const mealIds = meals.map((meal) => meal._id.toString());
+
+              // Update each day with unique meals only in empty slots
+              const updatedDays = days.map((day) => {
+                const selectedMeals = new Set(
+                  day.mealsId
+                    .filter((meal) => meal !== null)
+                    .map((meal) => meal.toString())
+                );
+                let updated = false;
+
+                day.mealsId = day.mealsId.map((mealId) => {
+                  if (mealId !== null) return mealId; // Keep non-null meals as they are
+
+                  // Find a unique meal not yet in this day
+                  let newMeal;
+                  do {
+                    newMeal =
+                      mealIds[Math.floor(Math.random() * mealIds.length)];
+                  } while (selectedMeals.has(newMeal));
+
+                  selectedMeals.add(newMeal); // Add to the set to avoid duplicates
+                  updated = true;
+                  return newMeal;
+                });
+
+                return updated ? day.save() : Promise.resolve(day); // Save only if updated
+              });
+
+              // Wait for all updates to complete
+              Promise.all(updatedDays)
+                .then((results) => {
+                  res.json({ result: true, updatedDays: results });
+                })
+                .catch((error) => {
+                  res.status(500).json({
+                    result: false,
+                    error: "Error updating existing days with meals",
+                  });
+                });
+            })
+            .catch((error) => {
+              res.status(500).json({
+                result: false,
+                error: "Database error retrieving meals",
+              });
+            });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            result: false,
+            error: "Database error retrieving user's days",
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        result: false,
+        error: "Database error retrieving user",
       });
     });
 });

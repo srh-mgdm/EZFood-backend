@@ -47,6 +47,7 @@ daySchema.static("findDaysWithMeals", async function findDaysWithMeals(userId) {
             else: {
               _id: null,
               mealName: null,
+              mealImage: null,
             },
           },
         },
@@ -73,6 +74,7 @@ daySchema.static("findDaysWithMeals", async function findDaysWithMeals(userId) {
           $push: {
             mealId: "$meal._id",
             mealName: "$meal.mealName",
+            mealImage: "$meal.mealImage",
           },
         },
       },
