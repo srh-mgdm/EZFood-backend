@@ -1,5 +1,6 @@
 var express = require("express");
 var router = express.Router();
+const {ObjectId} = require("mongoose").Types
 
 const Meals = require("../models/meals");
 const User = require("../models/users");
@@ -20,6 +21,82 @@ router.get("/all", function (req, res) {
 
 /* GET meal by meal name - token NOT required */
 router.get("/name/:mealName", function (req, res) {
+  // Check if the input length is less than 5 characters
+  if (req.params.mealName.length < 5) {
+    // Short pattern
+    Meals.find(
+      {
+        // mealName: { $regex: `^${req.params.mealName}`, $options: "i" },
+        mealName: {
+          $regex:
+            req.params.mealName.length <= 2
+              ? new RegExp(`^${req.params.mealName}`, "i")
+              : new RegExp(req.params.mealName, "i"),
+        },
+      },
+      {
+        _id: 1,
+        mealName: 1,
+        mealImage: 1,
+      }
+    )
+      .limit(10)
+      .then((results) => {
+        res.json({ result: true, meals: results });
+      })
+      .catch((error) => {
+        console.error("Error fetching meals:", error);
+        res.json({ result: false, error: "Cannot fetch meals" });
+      });
+  } else {
+    // Let's use aggregation framework for longer patterns
+    Meals.aggregate([
+      {
+        $search: {
+          index: "default", // search index created in the db
+          compound: {
+            should: [
+              {
+                autocomplete: {
+                  query: req.params.mealName, // text to search
+                  path: "mealName", // field to search in the db
+                  fuzzy: {
+                    maxEdits: 2, // tolerance for typing errors
+                  },
+                  score: { boost: { value: 20 } }, // boost results matching the text
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          mealName: 1,
+          mealImage: 1,
+          score: { $meta: "searchScore" },
+        },
+      },
+      {
+        $sort: {
+          score: -1, // sort by score in descending order
+        },
+      },
+    ])
+      .then((results) => {
+        res.json({ result: true, meals: results });
+      })
+      .catch((error) => {
+        console.error("Error fetching meal:", error);
+        res.json({ result: false, error: "Cannot fetch meal" });
+      });
+  }
+});
+
+/* GET meals by suggestion - token NOT required */
+// for now : the suggestion is only the first results without fuzzy matching
+// it is used when the matching pattern is under 5 characters
+router.get("/suggestions/:mealName", function (req, res) {
   // Let's use aggregation framework
   Meals.aggregate([
     {
@@ -31,10 +108,6 @@ router.get("/name/:mealName", function (req, res) {
               autocomplete: {
                 query: req.params.mealName, // text to search
                 path: "mealName", // field to search in the db
-                fuzzy: {
-                  maxEdits: 2, // tolerance for typing errors
-                },
-                score: { boost: { value: 20 } }, // boost results matching the text
               },
             },
           ],
@@ -111,19 +184,74 @@ router.get("/:mealId", function (req, res) {
 
 /* GET meal by id => ingredients list */
 
-// router.post("/ingredients", async function (req, res) {
+router.post("/ingredientslist", async function (req, res) {
 
-//   try {
-//     // Conversion des mealIds en ObjectId
-//     const mealIds = req.body.meal.map(id => mongoose.Types.ObjectId(id));
+  // const mealIds = req.body.mealIds
 
-//     const meals = await Meal.find({ _id: { $in: mealIds } });
-//     res.json({ result: true, meals });
-//   } catch (error) {
-//     console.error("Erreur lors de la récupération des repas:", error);
-//     res.status(500).json({ result: false, error: "Erreur lors de la récupération des repas." });
-//   }
-// });
+  // let mealIdArr = []
+  // for (const m of mealIds) {
+  //  m && mealIdArr.push(new ObjectId(String(m)))
+  // }
+
+  // mealIdArr.forEach(mealId =>
+  //   Meals.findById(mealId)
+  //     .populate("mealIngredients.ingredientId")
+  //     .then((data) => {
+  //         res.json({ result: true, meal: data.mealName });
+  //       })
+  // )
+  try {
+    const mealIds = req.body.mealIds;
+
+    // Vérifiez que mealIds est un tableau
+    if (!Array.isArray(mealIds)) {
+      return res.status(400).json({ result: false, error: "mealIds must be an array" });
+    }
+
+    // Convertir les ID en ObjectId et filtrer les valeurs nulles/undefined
+    let mealIdArr = mealIds.filter(Boolean).map(m => new ObjectId(String(m)));
+
+    // Utiliser Promise.all pour attendre toutes les requêtes asynchrones
+    const meals = await Promise.all(
+      mealIdArr.map(mealId =>
+        Meals.findById(mealId)
+        .populate("mealIngredients.ingredientId")
+      )
+    );
+
+    // Vérifiez et retournez les résultats collectés
+
+    const resultIngredients = [];
+
+    meals.forEach(meal => {
+      if (meal && meal.mealIngredients) {
+        meal.mealIngredients.forEach(ingredient => {
+          if (ingredient.ingredientId) {
+            // Cherchez si l'ingrédient est déjà dans resultIngredients
+            let ingIndex = resultIngredients.findIndex(ing => ing.name === ingredient.ingredientId.name);
+
+            if (ingIndex === -1) {
+              // Si l'ingrédient n'est pas trouvé, l'ajouter à la liste
+              resultIngredients.push({
+                name: ingredient.ingredientId.name,
+                qt: ingredient.quantity,
+                unitType: ingredient.unit
+              });
+            } else {
+              // Si l'ingrédient est trouvé, ajouter la quantité
+              resultIngredients[ingIndex].qt += ingredient.quantity;
+            }
+          }
+        });
+      }
+    });
+
+    res.json({ result: true, shoppingList: resultIngredients });
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+    res.status(500).json({ result: false, error: "Internal server error" });
+  }
+});
 
 
 
