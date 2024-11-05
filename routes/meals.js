@@ -1,6 +1,6 @@
 var express = require("express");
 var router = express.Router();
-const {ObjectId} = require("mongoose").Types
+const { ObjectId } = require("mongoose").Types;
 
 const Meals = require("../models/meals");
 const User = require("../models/users");
@@ -185,37 +185,23 @@ router.get("/:mealId", function (req, res) {
 /* GET meal by id => ingredients list */
 
 router.post("/ingredientslist", async function (req, res) {
-
-  // const mealIds = req.body.mealIds
-
-  // let mealIdArr = []
-  // for (const m of mealIds) {
-  //  m && mealIdArr.push(new ObjectId(String(m)))
-  // }
-
-  // mealIdArr.forEach(mealId =>
-  //   Meals.findById(mealId)
-  //     .populate("mealIngredients.ingredientId")
-  //     .then((data) => {
-  //         res.json({ result: true, meal: data.mealName });
-  //       })
-  // )
   try {
     const mealIds = req.body.mealIds;
 
     // Vérifiez que mealIds est un tableau
     if (!Array.isArray(mealIds)) {
-      return res.status(400).json({ result: false, error: "mealIds must be an array" });
+      return res
+        .status(400)
+        .json({ result: false, error: "mealIds must be an array" });
     }
 
     // Convertir les ID en ObjectId et filtrer les valeurs nulles/undefined
-    let mealIdArr = mealIds.filter(Boolean).map(m => new ObjectId(String(m)));
+    let mealIdArr = mealIds.filter(Boolean).map((m) => new ObjectId(String(m)));
 
     // Utiliser Promise.all pour attendre toutes les requêtes asynchrones
     const meals = await Promise.all(
-      mealIdArr.map(mealId =>
-        Meals.findById(mealId)
-        .populate("mealIngredients.ingredientId")
+      mealIdArr.map((mealId) =>
+        Meals.findById(mealId).populate("mealIngredients.ingredientId")
       )
     );
 
@@ -223,19 +209,21 @@ router.post("/ingredientslist", async function (req, res) {
 
     const resultIngredients = [];
 
-    meals.forEach(meal => {
+    meals.forEach((meal) => {
       if (meal && meal.mealIngredients) {
-        meal.mealIngredients.forEach(ingredient => {
+        meal.mealIngredients.forEach((ingredient) => {
           if (ingredient.ingredientId) {
             // Cherchez si l'ingrédient est déjà dans resultIngredients
-            let ingIndex = resultIngredients.findIndex(ing => ing.name === ingredient.ingredientId.name);
+            let ingIndex = resultIngredients.findIndex(
+              (ing) => ing.name === ingredient.ingredientId.name
+            );
 
             if (ingIndex === -1) {
               // Si l'ingrédient n'est pas trouvé, l'ajouter à la liste
               resultIngredients.push({
                 name: ingredient.ingredientId.name,
                 qt: ingredient.quantity,
-                unitType: ingredient.unit
+                unitType: ingredient.unit,
               });
             } else {
               // Si l'ingrédient est trouvé, ajouter la quantité
@@ -252,8 +240,6 @@ router.post("/ingredientslist", async function (req, res) {
     res.status(500).json({ result: false, error: "Internal server error" });
   }
 });
-
-
 
 /* POST a full new meal for a user by token */
 router.post("/", function (req, res) {
