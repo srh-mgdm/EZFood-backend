@@ -18,6 +18,8 @@ const mealSchema = mongoose.Schema({
   mealPrepSteps: [prepStepSchema],
   mealServings: Number,
   mealImage: String,
+  isPublic: {Boolean: true},
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
 });
 
 // Creates a text index on the 'mealName' field to enable efficient text searches.

@@ -111,19 +111,19 @@ router.get("/:mealId", function (req, res) {
 
 /* GET meal by id => ingredients list */
 
-router.post("/ingredients", async function (req, res) {
+// router.post("/ingredients", async function (req, res) {
 
-  try {
-    // Conversion des mealIds en ObjectId
-    const mealIds = req.body.meal.map(id => mongoose.Types.ObjectId(id));
+//   try {
+//     // Conversion des mealIds en ObjectId
+//     const mealIds = req.body.meal.map(id => mongoose.Types.ObjectId(id));
 
-    const meals = await Meal.find({ _id: { $in: mealIds } });
-    res.json({ result: true, meals });
-  } catch (error) {
-    console.error("Erreur lors de la récupération des repas:", error);
-    res.status(500).json({ result: false, error: "Erreur lors de la récupération des repas." });
-  }
-});
+//     const meals = await Meal.find({ _id: { $in: mealIds } });
+//     res.json({ result: true, meals });
+//   } catch (error) {
+//     console.error("Erreur lors de la récupération des repas:", error);
+//     res.status(500).json({ result: false, error: "Erreur lors de la récupération des repas." });
+//   }
+// });
 
 
 
@@ -160,6 +160,7 @@ router.post("/", function (req, res) {
           mealPrepSteps: req.body.mealPrepSteps,
           mealServings: req.body.mealServings,
           userId: data._id, // user id for foreign key
+
         });
 
         console.log("user found, creating new meal :", newMeal);
@@ -248,6 +249,7 @@ router.post("/ingredients", async function (req, res) {
       mealPrepSteps: req.body.mealPrepSteps,
       mealServings: req.body.mealServings,
       userId: user._id, // user id for foreign key
+      mealImage: req.body.mealImage,
     });
 
     const meal = await newMeal.save();
