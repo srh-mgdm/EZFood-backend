@@ -29,7 +29,9 @@ router.post("/signup", (req, res) => {
     res.json({ result: false, error: "Passwords do not match" });
     return;
   }
-  User.findOne({ email: req.body.email })
+
+
+  User.findOne({ email: req.body.email.toLowerCase() })
     .then((data) => {
       if (data === null) {
         const hash = bcrypt.hashSync(req.body.password, 10);
@@ -37,7 +39,7 @@ router.post("/signup", (req, res) => {
         const newUser = new User({
           name: req.body.name,
           username: req.body.username,
-          email: req.body.email,
+          email: req.body.email.toLowerCase(),
           password: hash,
           token: uid2(32),
         });
@@ -70,7 +72,7 @@ router.post("/signin", (req, res) => {
     return;
   }
 
-  User.findOne({ email: req.body.email })
+  User.findOne({ email: req.body.email.toLowerCase() })
     .then((data) => {
       if (data && bcrypt.compareSync(req.body.password, data.password)) {
         res.json({ result: true, token: data.token, username: data.username });
