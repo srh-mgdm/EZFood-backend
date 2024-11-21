@@ -9,15 +9,15 @@ const Ingredients = require("../models/ingredients");
 const { checkBody } = require("../modules/checkBody");
 
 /* GET meals - technical route for test purpose only */
-router.get("/all", function (req, res) {
-  Meals.find()
-    .then((data) => {
-      res.json({ result: true, meals: data });
-    })
-    .catch((error) => {
-      res.json({ result: false, error: "Cannot fetch meals" });
-    });
-});
+// router.get("/all", function (req, res) {
+//   Meals.find()
+//     .then((data) => {
+//       res.json({ result: true, meals: data });
+//     })
+//     .catch((error) => {
+//       res.json({ result: false, error: "Cannot fetch meals" });
+//     });
+// });
 
 /* GET meal by meal name - token NOT required */
 router.get("/name/:mealName", function (req, res) {
@@ -96,76 +96,76 @@ router.get("/name/:mealName", function (req, res) {
 /* GET meals by suggestion - token NOT required */
 // for now : the suggestion is only the first results without fuzzy matching
 // it is used when the matching pattern is under 5 characters
-router.get("/suggestions/:mealName", function (req, res) {
-  // Let's use aggregation framework
-  Meals.aggregate([
-    {
-      $search: {
-        index: "default", // search index created in the db
-        compound: {
-          should: [
-            {
-              autocomplete: {
-                query: req.params.mealName, // text to search
-                path: "mealName", // field to search in the db
-              },
-            },
-          ],
-        },
-      },
-    },
-    {
-      $project: {
-        mealName: 1,
-        mealImage: 1,
-        score: { $meta: "searchScore" },
-      },
-    },
-    {
-      $sort: {
-        score: -1, // sort by score in descending order
-      },
-    },
-  ])
-    .then((results) => {
-      res.json({ result: true, meals: results });
-    })
-    .catch((error) => {
-      console.error("Error fetching meal:", error);
-      res.json({ result: false, error: "Cannot fetch meal" });
-    });
-});
+// router.get("/suggestions/:mealName", function (req, res) {
+//   // Let's use aggregation framework
+//   Meals.aggregate([
+//     {
+//       $search: {
+//         index: "default", // search index created in the db
+//         compound: {
+//           should: [
+//             {
+//               autocomplete: {
+//                 query: req.params.mealName, // text to search
+//                 path: "mealName", // field to search in the db
+//               },
+//             },
+//           ],
+//         },
+//       },
+//     },
+//     {
+//       $project: {
+//         mealName: 1,
+//         mealImage: 1,
+//         score: { $meta: "searchScore" },
+//       },
+//     },
+//     {
+//       $sort: {
+//         score: -1, // sort by score in descending order
+//       },
+//     },
+//   ])
+//     .then((results) => {
+//       res.json({ result: true, meals: results });
+//     })
+//     .catch((error) => {
+//       console.error("Error fetching meal:", error);
+//       res.json({ result: false, error: "Cannot fetch meal" });
+//     });
+// });
 
 /* GET meals for user by token */
-router.get("/", function (req, res) {
-  // Parse header for token
-  if (!req.headers.authorization) {
-    return res.status(400).json({ error: "Token is required" });
-  }
-  const token = req.headers.authorization.split(" ")[1];
+// router.get("/", function (req, res) {
+//   // Parse header for token
+//   if (!req.headers.authorization) {
+//     return res.status(400).json({ error: "Token is required" });
+//   }
+//   const token = req.headers.authorization.split(" ")[1];
 
-  // Get user
-  User.findOne({ token: token })
-    .then((data) => {
-      if (data) {
-        Meals.find({ userId: data._id })
-          .then((meals) => {
-            res.json({ result: true, meals: meals });
-          })
-          .catch((error) => {
-            res.json({ result: false, error: "Cannot fetch meals" });
-          });
-      } else {
-        res.json({ result: false, error: "User not found" });
-      }
-    })
-    .catch((error) => {
-      res.json({
-        result: false,
-        error: "Database error when looking for user",
-      });
-    });
-});
+//   // Get user
+//   User.findOne({ token: token })
+//     .then((data) => {
+//       if (data) {
+//         Meals.find({ userId: data._id })
+//           .then((meals) => {
+//             res.json({ result: true, meals: meals });
+//           })
+//           .catch((error) => {
+//             res.json({ result: false, error: "Cannot fetch meals" });
+//           });
+//       } else {
+//         res.json({ result: false, error: "User not found" });
+//       }
+//     })
+//     .catch((error) => {
+//       res.json({
+//         result: false,
+//         error: "Database error when looking for user",
+//       });
+//     });
+// });
 
 /* GET meal by id - token NOT required */
 router.get("/:mealId", function (req, res) {
@@ -185,62 +185,62 @@ router.get("/:mealId", function (req, res) {
 
 
 /* POST a full new meal for a user by token */
-router.post("/", function (req, res) {
-  // Parse header for token
-  if (!req.headers.authorization) {
-    return res.status(400).json({ error: "Token is required" });
-  }
-  const token = req.headers.authorization.split(" ")[1];
+// router.post("/", function (req, res) {
+//   // Parse header for token
+//   if (!req.headers.authorization) {
+//     return res.status(400).json({ error: "Token is required" });
+//   }
+//   const token = req.headers.authorization.split(" ")[1];
 
-  // Check request body for required fields
-  if (
-    !checkBody(req.body, [
-      "mealName",
-      "mealPrepTime",
-      "mealIngredients",
-      "mealPrepSteps",
-      "mealServings",
-    ])
-  ) {
-    res.json({ result: false, error: "Missing or empty fields" });
-    return;
-  }
+//   // Check request body for required fields
+//   if (
+//     !checkBody(req.body, [
+//       "mealName",
+//       "mealPrepTime",
+//       "mealIngredients",
+//       "mealPrepSteps",
+//       "mealServings",
+//     ])
+//   ) {
+//     res.json({ result: false, error: "Missing or empty fields" });
+//     return;
+//   }
 
-  // Get user
-  User.findOne({ token: token })
-    .then((data) => {
-      if (data) {
-        const newMeal = new Meals({
-          mealName: req.body.mealName,
-          mealPrepTime: req.body.mealPrepTime,
-          mealIngredients: req.body.mealIngredients,
-          mealPrepSteps: req.body.mealPrepSteps,
-          mealServings: req.body.mealServings,
-          userId: data._id, // user id for foreign key
+//   // Get user
+//   User.findOne({ token: token })
+//     .then((data) => {
+//       if (data) {
+//         const newMeal = new Meals({
+//           mealName: req.body.mealName,
+//           mealPrepTime: req.body.mealPrepTime,
+//           mealIngredients: req.body.mealIngredients,
+//           mealPrepSteps: req.body.mealPrepSteps,
+//           mealServings: req.body.mealServings,
+//           userId: data._id, // user id for foreign key
 
-        });
+//         });
 
-        console.log("user found, creating new meal :", newMeal);
+//         console.log("user found, creating new meal :", newMeal);
 
-        newMeal
-          .save()
-          .then((data) => {
-            res.json({ result: true, meal: data });
-          })
-          .catch((error) => {
-            res.json({
-              result: false,
-              error: error.message || "Cannot create new meal",
-            });
-          });
-      } else {
-        res.json({ result: false, error: "User not found" });
-      }
-    })
-    .catch((error) => {
-      res.json({ result: false, error: "Database error" });
-    });
-});
+//         newMeal
+//           .save()
+//           .then((data) => {
+//             res.json({ result: true, meal: data });
+//           })
+//           .catch((error) => {
+//             res.json({
+//               result: false,
+//               error: error.message || "Cannot create new meal",
+//             });
+//           });
+//       } else {
+//         res.json({ result: false, error: "User not found" });
+//       }
+//     })
+//     .catch((error) => {
+//       res.json({ result: false, error: "Database error" });
+//     });
+// });
 
 /* POST a new meal, with ingredients, create new ingredients if needed */
 router.post("/ingredients", async function (req, res) {

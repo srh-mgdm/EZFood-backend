@@ -29,8 +29,6 @@ router.post("/signup", (req, res) => {
     res.json({ result: false, error: "Passwords do not match" });
     return;
   }
-
-
   User.findOne({ email: req.body.email.toLowerCase() })
     .then((data) => {
       if (data === null) {
