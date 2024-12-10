@@ -7,9 +7,12 @@ const daySchema = mongoose.Schema({
   mealsId: [{ type: mongoose.Schema.Types.ObjectId, ref: "meals" }],
 });
 
+// A static method is called directly on the model to work with all the data, without accessing a specific document.
+// this code define a static method with the name "findDaysWithMeals" for the model day which uses the aggregation in MonfoDB
+// The findDaysWithMeals function gets days and their meals from the database.
 daySchema.static("findDaysWithMeals", async function findDaysWithMeals(userId) {
   return this.aggregate([
-    {
+    { // $match: Filters the documents to include only those with the specified userId.
       $match: {
         userId: userId,
       },
@@ -26,12 +29,12 @@ daySchema.static("findDaysWithMeals", async function findDaysWithMeals(userId) {
         from: "meals",
         localField: "mealsId",
         foreignField: "_id",
-        as: "meal",
+        as: "meal", // is array
       },
     },
     {
       $addFields: {
-        meal: {
+        meal: { // is array
           $cond: {
             if: {
               $gt: [
@@ -60,7 +63,8 @@ daySchema.static("findDaysWithMeals", async function findDaysWithMeals(userId) {
     },
     {
       $group: {
-        _id: "$_id",
+        _id: "$_id", // a group is created for each day based on its _id.
+
         userId: {
           $first: "$userId",
         },

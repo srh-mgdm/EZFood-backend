@@ -15,6 +15,8 @@ const ingredientSchema = mongoose.Schema({
   // },
 });
 
+// Creates a text index on the 'name' field to enable efficient text searches.
+// This allows MongoDB to  search  ingredients quickly by keywords in their names.
 ingredientSchema.index({ name: "text" });
 
 const Ingredient = mongoose.model("ingredients", ingredientSchema);

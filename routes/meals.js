@@ -20,7 +20,7 @@ const { checkBody } = require("../modules/checkBody");
 // });
 
 /* GET meal by meal name - token NOT required */
-router.get("/name/:mealName", function (req, res) {
+router.get("/name/:mealName", function (req, res) { // receive mealName as a parameter from url
   // Check if the input length is less than 5 characters
   if (req.params.mealName.length < 5) {
     // Short pattern

@@ -19,6 +19,7 @@ router.get("/", (req, res) => {
 
 // Signup route
 router.post("/signup", (req, res) => {
+
   if (
     !checkBody(req.body, ["username", "email", "password", "retypePassword"])
   ) {
@@ -35,7 +36,7 @@ router.post("/signup", (req, res) => {
         const hash = bcrypt.hashSync(req.body.password, 10);
 
         const newUser = new User({
-          name: req.body.name,
+          // name: req.body.name,
           username: req.body.username,
           email: req.body.email.toLowerCase(),
           password: hash,
